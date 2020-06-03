@@ -7045,6 +7045,56 @@ class TestTorchDeviceType(TestCase):
         res2 = torch.cat((x, y), out=z)
         self.assertEqual(res1, res2)
 
+    def test_cat_in_channels_last(self, device):
+        x = torch.randn((4, 15, 8, 8))
+        y = torch.randn(x.shape)
+        res1 = torch.cat((x, y), dim=1)
+        x = x.clone().contiguous(memory_format=torch.channels_last)
+        y = y.clone().contiguous(memory_format=torch.channels_last)
+        res2 = torch.cat((x, y), dim=1)
+        self.assertTrue(res2.is_contiguous(memory_format=torch.channels_last))
+        self.assertEqual(res1, res2)
+
+        # Size larger than grain size.
+        x = torch.randn((4, 15, 256, 256))
+        y = torch.randn(x.shape)
+        res1 = torch.cat((x, y), dim=1)
+        x = x.clone().contiguous(memory_format=torch.channels_last)
+        y = y.clone().contiguous(memory_format=torch.channels_last)
+        res2 = torch.cat((x, y), dim=1)
+        self.assertTrue(res2.is_contiguous(memory_format=torch.channels_last))
+        self.assertEqual(res1, res2)
+
+        # Concat across dim 0
+        x = torch.randn((4, 15, 8, 8))
+        y = torch.randn(x.shape)
+        res1 = torch.cat((x, y), dim=0)
+        x = x.clone().contiguous(memory_format=torch.channels_last)
+        y = y.clone().contiguous(memory_format=torch.channels_last)
+        res2 = torch.cat((x, y), dim=0)
+        self.assertTrue(res2.is_contiguous(memory_format=torch.channels_last))
+        self.assertEqual(res1, res2)
+
+        # Concat across dim 2
+        x = torch.randn((4, 15, 8, 8))
+        y = torch.randn(x.shape)
+        res1 = torch.cat((x, y), dim=2)
+        x = x.clone().contiguous(memory_format=torch.channels_last)
+        y = y.clone().contiguous(memory_format=torch.channels_last)
+        res2 = torch.cat((x, y), dim=2)
+        self.assertTrue(res2.is_contiguous(memory_format=torch.channels_last))
+        self.assertEqual(res1, res2)
+
+        # Concat across dim 3
+        x = torch.randn((4, 15, 8, 8))
+        y = torch.randn(x.shape)
+        res1 = torch.cat((x, y), dim=3)
+        x = x.clone().contiguous(memory_format=torch.channels_last)
+        y = y.clone().contiguous(memory_format=torch.channels_last)
+        res2 = torch.cat((x, y), dim=3)
+        self.assertTrue(res2.is_contiguous(memory_format=torch.channels_last))
+        self.assertEqual(res1, res2)
+
     @onlyCUDA
     def test_cat_preserve_channels_last(self, device):
         x = torch.randn((4, 3, 8, 8), device=device)
