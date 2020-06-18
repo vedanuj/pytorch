@@ -7374,7 +7374,7 @@ class TestTorchDeviceType(TestCase):
 
     @skipCUDAIfNoMagma
     @skipCPUIfNoLapack
-    @dtypes(torch.double)
+    @dtypes(torch.float, torch.double)
     def test_matrix_exp(self, device, dtype):
         def run_test(*n):
             if len(n) <= 2:
@@ -7387,7 +7387,7 @@ class TestTorchDeviceType(TestCase):
                 u, s, v = torch.svd(x)
                 mexp_svd = u @ torch.diag(s.exp()) @ v.t()
 
-                self.assertEqual(mexp, mexp_svd, atol=1e-5, rtol=0)
+                self.assertEqual(mexp, mexp_svd, atol=1e-4, rtol=0)
 
                 # generic square matrix case
                 q = torch.randn(n, dtype=dtype, device=device)
@@ -7398,7 +7398,7 @@ class TestTorchDeviceType(TestCase):
                 mexp = torch.matrix_exp(x)
                 mexp_eig = q @ torch.diag(d.exp()) @ qinv
 
-                self.assertEqual(mexp, mexp_eig, atol=1e-5, rtol=0)
+                self.assertEqual(mexp, mexp_eig, atol=1e-4, rtol=0)
             else:
                 # batched
 
@@ -7412,7 +7412,7 @@ class TestTorchDeviceType(TestCase):
 
                 mexp_svd = torch.bmm(u, torch.bmm(torch.diag_embed(s.exp()), v.transpose(-1, -2)))
 
-                self.assertEqual(mexp, mexp_svd, atol=1e-5, rtol=0)
+                self.assertEqual(mexp, mexp_svd, atol=1e-4, rtol=0)
 
                 # generic square matrix case
                 q = torch.randn(n, dtype=dtype, device=device)
@@ -7423,7 +7423,7 @@ class TestTorchDeviceType(TestCase):
                 mexp = torch.matrix_exp(x)
                 mexp_eig = torch.bmm(q, torch.bmm(torch.diag_embed(d.exp()), qinv))
 
-                self.assertEqual(mexp, mexp_eig, atol=1e-5, rtol=0)
+                self.assertEqual(mexp, mexp_eig, atol=1e-4, rtol=0)
 
         # single matrix
         run_test(2, 2)
