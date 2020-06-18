@@ -520,6 +520,11 @@ namespace {
 
 template <typename func_t>
 void batch_apply(at::ArrayRef<Tensor> tensors, int64_t n_batch_dims, const func_t& f) {
+  // no-op if batch is empty
+  if (n_batch_dims <= 0) {
+    return;
+  }
+
   std::vector<Tensor> tensors_view;
   for (auto& tensor : tensors) {
     std::vector<int64_t> tensor_view_sizes;
