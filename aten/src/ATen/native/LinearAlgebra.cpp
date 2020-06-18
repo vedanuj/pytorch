@@ -687,7 +687,7 @@ Tensor matrix_exp(const Tensor& a) {
   if (a.scalar_type() == at::ScalarType::Float) {
     return matrix_power(compute_T18<float>(a_scaled), pow2s);
   }
-  else {
+  else { // if Double
     return matrix_power(compute_T18<double>(a_scaled), pow2s);
   }
 }
