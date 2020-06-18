@@ -557,6 +557,23 @@ void batch_apply(Tensor& input, int64_t n_data_dims, const func_t& f) {
   }
 }
 
+Tensor matrix_power(const Tensor& matrices, const Tensor& powers) {
+  auto res = at::empty(matrices.sizes(), matrices.options());
+
+  batch_apply(
+    {res, matrices, powers},
+    matrices.dim() - 2,
+    [](auto& tensors) {
+      auto& out = tensors[0];
+      auto& in = tensors[1];
+      int64_t n = tensors[2].item().template to<int64_t>();
+      out = at::matrix_power(in, n);
+    }
+  );
+
+  return res;
+}
+
 Tensor operator_1_norm(const Tensor& tensor) {
   return std::get<0>(tensor.abs().sum(-2).max(-1));
 }
