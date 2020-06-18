@@ -558,7 +558,7 @@ void batch_apply(Tensor& input, int64_t n_data_dims, const func_t& f) {
   auto input_view = input.view(view_sizes);
   for (int64_t input_idx = 0; input_idx < input_view.size(0); ++input_idx) {
     auto curr_data = input_view.select(0, input_idx);
-    curr_data = f(curr_data);
+    curr_data.copy_(f(curr_data));
   }
 }
 
@@ -666,23 +666,29 @@ Tensor matrix_exp(const Tensor& a) {
     return a.exp();
   }
 
-  // FIXME: the way s is defined can cause underflow. Do something about it.
-  auto max_norm = operator_1_norm(a).max().item();
+  Tensor s;
+  auto norm = operator_1_norm(a);
   if (a.scalar_type() == at::ScalarType::Float) {
-    float norm = max_norm.to<float>();
     float theta_18 = 3.010066362817634e+00;
-    int s = std::max(static_cast<float>(0.0), std::ceil(std::log2(norm / theta_18)));
-    int64_t pow2s = std::pow(2, s);
-    auto a_scaled = a / pow2s;
-    return at::matrix_power(compute_T18<float>(a_scaled), pow2s);
+    s = at::max(at::zeros_like(norm),
+        at::ceil(at::log2(norm / theta_18))).to(at::kLong);
   }
   else { // if Double
-    double norm = max_norm.to<double>();
     double theta_18 = 1.090863719290036e+00;
-    int s = std::max(static_cast<double>(0.0), std::ceil(std::log2(norm / theta_18)));
-    int64_t pow2s = std::pow(2, s);
-    auto a_scaled = a / pow2s;
-    return at::matrix_power(compute_T18<double>(a_scaled), pow2s);
+    s = at::max(at::zeros_like(norm),
+        at::ceil(at::log2(norm / theta_18))).to(at::kLong);
+  }
+
+  // Scale
+  auto pow2s = at::pow(2, s);
+  auto a_scaled = a / pow2s.unsqueeze(-1).unsqueeze(-1);
+
+  // Square
+  if (a.scalar_type() == at::ScalarType::Float) {
+    return matrix_power(compute_T18<float>(a_scaled), pow2s);
+  }
+  else {
+    return matrix_power(compute_T18<double>(a_scaled), pow2s);
   }
 }
 
