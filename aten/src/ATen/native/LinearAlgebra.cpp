@@ -518,6 +518,45 @@ Tensor& matmul_out(Tensor &result, const Tensor & tensor1, const Tensor & tensor
 // helper methods for matrix_exp
 namespace {
 
+template <typename func_t>
+void batch_apply(at::ArrayRef<Tensor> tensors, int64_t n_batch_dims, const func_t& f) {
+  std::vector<Tensor> tensors_view;
+  for (auto& tensor : tensors) {
+    std::vector<int64_t> tensor_view_sizes;
+    tensor_view_sizes.push_back(-1);
+    for (int d = n_batch_dims; d < tensor.dim(); ++d) {
+      tensor_view_sizes.push_back(tensor.size(d));
+    }
+    auto tensor_view = tensor.view(tensor_view_sizes);
+    tensors_view.push_back(tensor_view);
+  }
+
+  for (int64_t input_idx = 0; input_idx < tensors_view[0].size(0);
+    ++input_idx) {
+    std::vector<Tensor> input_selected;
+    for (auto& tensor_view : tensors_view) {
+      auto curr_input = tensor_view.select(0, input_idx);
+      input_selected.push_back(curr_input);
+    }
+    f(input_selected);
+  }
+}
+
+template <typename func_t>
+void batch_apply(Tensor& input, int64_t n_data_dims, const func_t& f) {
+  std::vector<int64_t> view_sizes;
+  view_sizes.push_back(-1);
+  for (int64_t i = n_data_dims; i >= 1; --i) {
+    view_sizes.push_back(-i);
+  }
+
+  auto input_view = input.view(view_sizes);
+  for (int64_t input_idx = 0; input_idx < input_view.size(0); ++input_idx) {
+    auto curr_data = input_view.select(0, input_idx);
+    curr_data = f(curr_data);
+  }
+}
+
 Tensor operator_1_norm(const Tensor& tensor) {
   return std::get<0>(tensor.abs().sum(-2).max(-1));
 }
