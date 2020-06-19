@@ -547,21 +547,6 @@ void batch_apply(at::ArrayRef<Tensor> tensors, int64_t n_batch_dims, const func_
   }
 }
 
-template <typename func_t>
-void batch_apply(Tensor& input, int64_t n_data_dims, const func_t& f) {
-  std::vector<int64_t> view_sizes;
-  view_sizes.push_back(-1);
-  for (int64_t i = n_data_dims; i >= 1; --i) {
-    view_sizes.push_back(-i);
-  }
-
-  auto input_view = input.view(view_sizes);
-  for (int64_t input_idx = 0; input_idx < input_view.size(0); ++input_idx) {
-    auto curr_data = input_view.select(0, input_idx);
-    curr_data.copy_(f(curr_data));
-  }
-}
-
 Tensor matrix_power(const Tensor& matrices, const Tensor& powers) {
   if (matrices.dim() > 2) {
     auto res = at::empty(matrices.sizes(), matrices.options());
