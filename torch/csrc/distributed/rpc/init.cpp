@@ -122,7 +122,7 @@ PyObject* rpc_init(PyObject* /* unused */) {
               py::call_guard<py::gil_scoped_release>());
 
   auto pyRRef =
-      shared_ptr_class_<PyRRef>(module, "RRef", R"(
+      shared_ptr_class_<PyRRef>(module, "PyRRef", R"(
           A class encapsulating a reference to a value of some type on a remote
           worker. This handle will keep the referenced remote value alive on the
           worker. A ``UserRRef`` will be deleted when 1) no references to it in
@@ -710,6 +710,8 @@ PyObject* rpc_init(PyObject* /* unused */) {
   module.def(
       "_disable_server_process_global_profiler",
       &profiler::processglobal::disableServer);
+
+  module.def("_set_profiler_node_id", &at::RecordFunction::setDefaultNodeId);
 
   Py_RETURN_TRUE;
 }
