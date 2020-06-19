@@ -741,12 +741,24 @@ Tensor compute_T18(Tensor& A) {
 }
 
 template <typename scalar_t>
-Tensor mexp_impl(const Tensor& a, scalar_t theta_18) {
+Tensor mexp_impl(const Tensor& a, std::array<scalar_t, 6> thetas) {
   auto norm = operator_1_norm(a);
-  auto s = at::max(at::zeros_like(norm),
-              at::ceil(at::log2(norm / theta_18))).to(at::kLong);
+
+  auto norm_value = norm.item().template to<scalar_t>();
+  //std::array<decltype(compute_T1), 5> compute_Ts = {
+  //  compute_T1, compute_T2, compute_T4,
+  //  compute_T8<scalar_t>, compute_T12<scalar_t>
+  //};
+
+  //for (int i = 0; i < 5; ++i) {
+  //  if (norm_value < thetas[i]) {
+  //    return compute_Ts[i](a);
+  //  }
+  //}
 
   // Scale
+  auto s = at::max(at::zeros_like(norm),
+              at::ceil(at::log2(norm / thetas[5]))).to(at::kLong);
   auto pow2s = at::pow(2, s);
   auto a_scaled = a / pow2s.unsqueeze(-1).unsqueeze(-1);
 
@@ -757,10 +769,26 @@ Tensor mexp_impl(const Tensor& a, scalar_t theta_18) {
 // matrix exponential of a single matrix
 Tensor mexp(const Tensor& a) {
   if (a.scalar_type() == at::ScalarType::Float) {
-    return mexp_impl<float>(a, 3.010066362817634e+00);
+    constexpr std::array<float, 6> thetas_float = {
+      1.192092800768788e-07,
+      5.978858893805233e-04,
+      5.116619363445086e-02,
+      5.800524627688768e-01,
+      1.461661507209034e+00,
+      3.010066362817634e+00
+    };
+    return mexp_impl<float>(a, thetas_float);
   }
   else { // if Double
-    return mexp_impl<double>(a, 1.090863719290036e+00);
+    constexpr std::array<double, 6> thetas_double = {
+      2.220446049250313e-16,
+      2.580956802971767e-08,
+      3.397168839976962e-04,
+      4.991228871115323e-02,
+      2.996158913811580e-01,
+      1.090863719290036e+00
+    };
+    return mexp_impl<double>(a, thetas_double);
   }
 }
 
