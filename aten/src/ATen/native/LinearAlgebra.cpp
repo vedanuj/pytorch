@@ -658,7 +658,7 @@ Tensor compute_T12(const Tensor& A) {
   auto I = at::eye(A.size(-1), A.options()).expand_as(A);
   auto A2 = at::matmul(A, A);
   auto A3 = at::matmul(A2, A);
-  std::reference_wrapper<Tensor> As[] = {I, A, A2, A3};
+  std::reference_wrapper<const Tensor> As[] = {I, A, A2, A3};
 
   Tensor Bs[4];
   for (int i = 0; i < 4; ++i) {
@@ -745,16 +745,16 @@ Tensor mexp_impl(const Tensor& a, std::array<scalar_t, 6> thetas) {
   auto norm = operator_1_norm(a);
 
   auto norm_value = norm.item().template to<scalar_t>();
-  //std::array<decltype(compute_T1), 5> compute_Ts = {
-  //  compute_T1, compute_T2, compute_T4,
-  //  compute_T8<scalar_t>, compute_T12<scalar_t>
-  //};
+  constexpr Tensor(*compute_Ts[])(const Tensor&) = {
+    compute_T1, compute_T2, compute_T4,
+    compute_T8<scalar_t>, compute_T12<scalar_t>
+  };
 
-  //for (int i = 0; i < 5; ++i) {
-  //  if (norm_value < thetas[i]) {
-  //    return compute_Ts[i](a);
-  //  }
-  //}
+  for (int i = 0; i < 5; ++i) {
+    if (norm_value < thetas[i]) {
+      return compute_Ts[i](a);
+    }
+  }
 
   // Scale
   auto s = at::max(at::zeros_like(norm),
