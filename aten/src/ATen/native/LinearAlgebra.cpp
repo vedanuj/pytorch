@@ -589,6 +589,43 @@ Tensor operator_1_norm(const Tensor& tensor) {
   return std::get<0>(tensor.abs().sum(-2).max(-1));
 }
 
+Tensor compute_T1(Tensor& A) {
+  auto I = at::eye(A.size(-1), A.options()).expand_as(A);
+  return I + A;
+}
+
+Tensor compute_T2(Tensor& A) {
+  auto I = at::eye(A.size(-1), A.options()).expand_as(A);
+  auto A2 = at::matmul(A, A);
+  return I + A + A2 / 2;
+}
+
+Tensor compute_T4(Tensor& A) {
+  auto I = at::eye(A.size(-1), A.options()).expand_as(A);
+  auto A2 = at::matmul(A, A);
+  return I + A + at::matmul(A2, I / 2. + A / 6. + A2 / 24.);
+}
+
+template <typename scalar_t>
+Tensor compute_T8(Tensor& A) {
+  // no constexpr support for std::sqrt unfortunately
+  scalar_t sqrt_177 = std::sqrt(177);
+  scalar_t x3 = 2. / 3.;
+  scalar_t x1 = x3 * ((1 + sqrt_177) / 88);
+  scalar_t x2 = x3 * ((1 + sqrt_177) / 352);
+  scalar_t x4 = (-271 + 29 * sqrt_177) / (315 * x3);
+  scalar_t x5 = (-11 + 11 * sqrt_177) / (1260 * x3);
+  scalar_t x6 = (-99 + 11 * sqrt_177) / (5040 * x3);
+  scalar_t x7 = (89 - sqrt_177) / (5040 * x3);
+  scalar_t y2 = (857 - 58 * sqrt_177) / 630;
+
+  auto I = at::eye(A.size(-1), A.options()).expand_as(A);
+  auto A2 = at::matmul(A, A);
+  auto A4 = at::matmul(A2, x1 * A + x2 * A2);
+  auto A8 = at::matmul(x3 * A2 + A4, x4 * I + x5 * A + x6 * A2 + x7 * A4);
+  return I + A + y2 * A2 + A8;
+}
+
 template <typename scalar_t>
 Tensor compute_T18(Tensor& A) {
   constexpr scalar_t b[][5] = {
