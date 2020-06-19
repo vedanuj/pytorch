@@ -589,25 +589,25 @@ Tensor operator_1_norm(const Tensor& tensor) {
   return std::get<0>(tensor.abs().sum(-2).max(-1));
 }
 
-Tensor compute_T1(Tensor& A) {
+Tensor compute_T1(const Tensor& A) {
   auto I = at::eye(A.size(-1), A.options()).expand_as(A);
   return I + A;
 }
 
-Tensor compute_T2(Tensor& A) {
+Tensor compute_T2(const Tensor& A) {
   auto I = at::eye(A.size(-1), A.options()).expand_as(A);
   auto A2 = at::matmul(A, A);
   return I + A + A2 / 2;
 }
 
-Tensor compute_T4(Tensor& A) {
+Tensor compute_T4(const Tensor& A) {
   auto I = at::eye(A.size(-1), A.options()).expand_as(A);
   auto A2 = at::matmul(A, A);
   return I + A + at::matmul(A2, I / 2. + A / 6. + A2 / 24.);
 }
 
 template <typename scalar_t>
-Tensor compute_T8(Tensor& A) {
+Tensor compute_T8(const Tensor& A) {
   // no constexpr support for std::sqrt unfortunately
   scalar_t sqrt_177 = std::sqrt(177);
   scalar_t x3 = 2. / 3.;
@@ -627,7 +627,7 @@ Tensor compute_T8(Tensor& A) {
 }
 
 template <typename scalar_t>
-Tensor compute_T12(Tensor& A) {
+Tensor compute_T12(const Tensor& A) {
   constexpr scalar_t b[][4] = {
     {
       9.0198e-16,
@@ -678,7 +678,7 @@ Tensor compute_T12(Tensor& A) {
 }
 
 template <typename scalar_t>
-Tensor compute_T18(Tensor& A) {
+Tensor compute_T18(const Tensor& A) {
   constexpr scalar_t b[][5] = {
     {
       0.,
@@ -721,7 +721,7 @@ Tensor compute_T18(Tensor& A) {
   auto A2 = at::matmul(A, A);
   auto A3 = at::matmul(A2, A);
   auto A6 = at::matmul(A3, A3);
-  std::reference_wrapper<Tensor> As[] = {I, A, A2, A3, A6};
+  std::reference_wrapper<const Tensor> As[] = {I, A, A2, A3, A6};
 
   Tensor Bs[5];
   for (int i = 0; i < 5; ++i) {
