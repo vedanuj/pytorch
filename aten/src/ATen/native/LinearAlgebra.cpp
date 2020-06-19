@@ -652,31 +652,27 @@ Tensor compute_T18(Tensor& A) {
   return res;
 }
 
-// matrix exponential of a single matrix
-Tensor mexp(const Tensor& a) {
-  Tensor s;
+template <typename scalar_t>
+Tensor mexp_impl(const Tensor& a, scalar_t theta_18) {
   auto norm = operator_1_norm(a);
-  if (a.scalar_type() == at::ScalarType::Float) {
-    float theta_18 = 3.010066362817634e+00;
-    s = at::max(at::zeros_like(norm),
-        at::ceil(at::log2(norm / theta_18))).to(at::kLong);
-  }
-  else { // if Double
-    double theta_18 = 1.090863719290036e+00;
-    s = at::max(at::zeros_like(norm),
-        at::ceil(at::log2(norm / theta_18))).to(at::kLong);
-  }
+  auto s = at::max(at::zeros_like(norm),
+              at::ceil(at::log2(norm / theta_18))).to(at::kLong);
 
   // Scale
   auto pow2s = at::pow(2, s);
   auto a_scaled = a / pow2s.unsqueeze(-1).unsqueeze(-1);
 
   // Square
+  return matrix_power(compute_T18<scalar_t>(a_scaled), pow2s);
+}
+
+// matrix exponential of a single matrix
+Tensor mexp(const Tensor& a) {
   if (a.scalar_type() == at::ScalarType::Float) {
-    return matrix_power(compute_T18<float>(a_scaled), pow2s);
+    return mexp_impl<float>(a, 3.010066362817634e+00);
   }
   else { // if Double
-    return matrix_power(compute_T18<double>(a_scaled), pow2s);
+    return mexp_impl<double>(a, 1.090863719290036e+00);
   }
 }
 
