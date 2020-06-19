@@ -3538,7 +3538,7 @@ Example::
 
     >>> a = torch.randn(2, 2, 2)
     >>> a[0, :, :] = torch.eye(2, 2)
-    >>> a[1, :, :] = 2 torch.eye(2, 2)
+    >>> a[1, :, :] = 2 * torch.eye(2, 2)
     >>> a
     tensor([[[1., 0.],
              [0., 1.]],
