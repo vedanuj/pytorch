@@ -627,6 +627,57 @@ Tensor compute_T8(Tensor& A) {
 }
 
 template <typename scalar_t>
+Tensor compute_T12(Tensor& A) {
+  constexpr scalar_t b[][4] = {
+    {
+      9.0198e-16,
+      0.46932117595418237389,
+      -0.20099424927047284052,
+      -0.04623946134063071740
+    },
+    {
+      5.31597895759871264183,
+      1.19926790417132231573,
+      0.01179296240992997031,
+      0.01108844528519167989
+    },
+    {
+      0.18188869982170434744,
+      0.05502798439925399070,
+      0.09351590770535414968,
+      0.00610700528898058230
+    },
+    {
+      -2.0861320e-13,
+      -0.13181061013830184015,
+      -0.02027855540589259079,
+      -0.00675951846863086359
+    }
+  };
+
+  auto I = at::eye(A.size(-1), A.options()).expand_as(A);
+  auto A2 = at::matmul(A, A);
+  auto A3 = at::matmul(A2, A);
+  std::reference_wrapper<Tensor> As[] = {I, A, A2, A3};
+
+  Tensor Bs[4];
+  for (int i = 0; i < 4; ++i) {
+    Bs[i] = at::zeros(A.sizes(), A.options());
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      Bs[i] += b[i][j] * As[j];
+    }
+  }
+
+  auto A6 = Bs[2] + at::matmul(Bs[3], Bs[3]);
+  auto res = Bs[0] + at::matmul(Bs[1] + A6, A6);
+
+  return res;
+}
+
+template <typename scalar_t>
 Tensor compute_T18(Tensor& A) {
   constexpr scalar_t b[][5] = {
     {
