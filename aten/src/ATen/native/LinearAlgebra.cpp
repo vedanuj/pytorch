@@ -652,20 +652,8 @@ Tensor compute_T18(Tensor& A) {
   return res;
 }
 
-};
-
-Tensor matrix_exp(const Tensor& a) {
-  TORCH_CHECK(a.dim() >= 2 && (at::isFloatingType(a.scalar_type()) || at::isComplexType(a.scalar_type())),
-              "matrix_exp(", a.scalar_type(), "{", a.sizes(), "}): expected a tensor "
-              "of floating types with dim at least 2");
-  TORCH_CHECK(a.size(-1) == a.size(-2),
-              "matrix_exp(", a.scalar_type(), "{", a.sizes(), "}): expected a tensor "
-              "of squared matrices");
-
-  if (a.size(-1) == 1) {
-    return a.exp();
-  }
-
+// matrix exponential of a single matrix
+Tensor mexp(const Tensor& a) {
   Tensor s;
   auto norm = operator_1_norm(a);
   if (a.scalar_type() == at::ScalarType::Float) {
@@ -689,6 +677,40 @@ Tensor matrix_exp(const Tensor& a) {
   }
   else { // if Double
     return matrix_power(compute_T18<double>(a_scaled), pow2s);
+  }
+}
+
+};
+
+Tensor matrix_exp(const Tensor& a) {
+  TORCH_CHECK(a.dim() >= 2 && (at::isFloatingType(a.scalar_type()) || at::isComplexType(a.scalar_type())),
+              "matrix_exp(", a.scalar_type(), "{", a.sizes(), "}): expected a tensor "
+              "of floating types with dim at least 2");
+  TORCH_CHECK(a.size(-1) == a.size(-2),
+              "matrix_exp(", a.scalar_type(), "{", a.sizes(), "}): expected a tensor "
+              "of squared matrices");
+
+  if (a.size(-1) == 1) {
+    return a.exp();
+  }
+
+  if (a.dim() <= 2) {
+    return mexp(a);
+  }
+  else {
+    auto res = at::empty(a.sizes(), a.options());
+    batch_apply(
+      {res, a},
+      a.dim() - 2,
+      [](auto tensors) {
+        auto& out = tensors[0];
+        auto& in = tensors[1];
+
+        out.copy_(mexp(in));
+      }
+    );
+
+    return res;
   }
 }
 
